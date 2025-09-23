@@ -740,36 +740,42 @@ AppController::createObservers()
 
     if (mTarget == IMAGE_TARGET_ID)
     {
-        auto imageTargetConfig = vuImageTargetConfigDefault();
-//      imageTargetConfig.databasePath = "ImageTargets/StonesAndChips.xml";
-//      imageTargetConfig.targetName = "stones";
-        imageTargetConfig.databasePath = "orignal/image.xml";
-        imageTargetConfig.targetName = "001_stones_jpg";
-        imageTargetConfig.activate = VU_TRUE;
+        for(int lpct = 0; lpct < 2; lpct++) {
+            auto imageTargetConfig = vuImageTargetConfigDefault();
+            imageTargetConfig.databasePath = "orignal/image.xml";
+            if(lpct == 0)
+                imageTargetConfig.targetName = "001_stones_jpg";
+            else
+                imageTargetConfig.targetName = "002_cleyon";
+            imageTargetConfig.activate = VU_TRUE;
 
-        VuImageTargetCreationError imageTargetCreationError;
-        if (vuEngineCreateImageTargetObserver(mEngine, &mObjectObserver, &imageTargetConfig, &imageTargetCreationError) != VU_SUCCESS)
-        {
-            LOG("Error creating image target observer: 0x%02x", imageTargetCreationError);
-            mErrorMessageCallback("Error creating image target observer");
-            return false;
+            VuObserver* observer = nullptr;
+            VuImageTargetCreationError imageTargetCreationError;
+            if (vuEngineCreateImageTargetObserver(mEngine, &observer, &imageTargetConfig, &imageTargetCreationError) != VU_SUCCESS)
+            {
+                LOG("Error creating image target observer: 0x%02x", imageTargetCreationError);
+                mErrorMessageCallback("Error creating image target observer");
+                return false;
+            }
+            mObjectObservers.push_back(observer);
         }
     }
     else
     {
-        auto modelTargetConfig = vuModelTargetConfigDefault();
-
-        modelTargetConfig.databasePath = "ModelTargets/VuforiaMars_ModelTarget.xml";
-        modelTargetConfig.targetName = "VuforiaMars_ModelTarget";
-        modelTargetConfig.activate = VU_TRUE;
-
-        VuModelTargetCreationError modelTargetCreationError;
-        if (vuEngineCreateModelTargetObserver(mEngine, &mObjectObserver, &modelTargetConfig, &modelTargetCreationError) != VU_SUCCESS)
-        {
-            LOG("Error creating image target observer: 0x%02x", modelTargetCreationError);
-            mErrorMessageCallback("Error creating model target observer");
-            return false;
-        }
+        assert(false);
+//        auto modelTargetConfig = vuModelTargetConfigDefault();
+//
+//        modelTargetConfig.databasePath = "ModelTargets/VuforiaMars_ModelTarget.xml";
+//        modelTargetConfig.targetName = "VuforiaMars_ModelTarget";
+//        modelTargetConfig.activate = VU_TRUE;
+//
+//        VuModelTargetCreationError modelTargetCreationError;
+//        if (vuEngineCreateModelTargetObserver(mEngine, &mObjectObserver, &modelTargetConfig, &modelTargetCreationError) != VU_SUCCESS)
+//        {
+//            LOG("Error creating image target observer: 0x%02x", modelTargetCreationError);
+//            mErrorMessageCallback("Error creating model target observer");
+//            return false;
+//        }
     }
 
     return true;
@@ -779,11 +785,13 @@ AppController::createObservers()
 void
 AppController::destroyObservers()
 {
-    if (mObjectObserver != nullptr && vuObserverDestroy(mObjectObserver) != VU_SUCCESS)
-    {
-        LOG("Error destroying object observer");
+    for(auto observer : mObjectObservers) {
+        if (observer != nullptr && vuObserverDestroy(observer) != VU_SUCCESS)
+        {
+            LOG("Error destroying object observer");
+        }
     }
-    mObjectObserver = nullptr;
+    mObjectObservers.clear();
 
     if (mDevicePoseObserver != nullptr && vuObserverDestroy(mDevicePoseObserver) != VU_SUCCESS)
     {
