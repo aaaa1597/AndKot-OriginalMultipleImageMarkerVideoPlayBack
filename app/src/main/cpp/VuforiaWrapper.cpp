@@ -308,24 +308,32 @@ Java_com_aaa_vuforiavideoplaybacksample_VuforiaWrapperKt_renderFrame(JNIEnv *env
             gWrapperData.renderer.renderWorldOrigin(worldOriginProjection, worldOriginModelView);
         }
 
-        VuMatrix44F trackableProjection;
-        VuMatrix44F trackableModelView;
-        VuMatrix44F trackableModelViewScaled;
-        VuImageInfo modelTargetGuideViewImage;
-        VuBool guideViewImageHasChanged;
-        VuVector2F markerSize;
-        if (controller.getImageTargetResult(trackableProjection, trackableModelView, trackableModelViewScaled, markerSize))
-        {
-            gWrapperData.renderer.renderVideoPlayback(trackableProjection, trackableModelView, trackableModelViewScaled, markerSize);
-            gWrapperData.renderer.renderImageTarget(trackableProjection, trackableModelView, trackableModelViewScaled);
-        }
+        auto [imageTargetList, CNT] = controller.createImageTargetList();
+        for (int idx = 0; idx < CNT; idx++) {
+            VuObservation* observation = nullptr;
+            if (vuObservationListGetElement(imageTargetList.get(), idx, &observation) != VU_SUCCESS)
+                continue;
 
-        if (gWrapperData.usingARCore)
-        {
-#if 0
-            accessFusionProviderPointers();
-#endif
+            assert(observation);
+            assert(vuObservationIsType(observation, VU_OBSERVATION_IMAGE_TARGET_TYPE) == VU_TRUE);
+            assert(vuObservationHasPoseInfo(observation) == VU_TRUE);
+
+            VuMatrix44F trackableProjection;
+            VuMatrix44F trackableModelView;
+            VuMatrix44F trackableModelViewScaled;
+            VuImageInfo modelTargetGuideViewImage;
+            VuBool guideViewImageHasChanged;
+            VuVector2F markerSize;
+            std::string tergetName;
+            if (controller.getImageTargetResult(observation, trackableProjection, trackableModelView, trackableModelViewScaled, markerSize, tergetName))
+            {
+                if(tergetName == "001_stones_jpg")
+                    gWrapperData.renderer.renderVideoPlayback(trackableProjection, trackableModelView, trackableModelViewScaled, markerSize);
+                else if(tergetName == "002_cleyon")
+                    gWrapperData.renderer.renderImageTarget(trackableProjection, trackableModelView, trackableModelViewScaled);
+            }
         }
+        imageTargetList.reset();
     }
 
     controller.finishRender();

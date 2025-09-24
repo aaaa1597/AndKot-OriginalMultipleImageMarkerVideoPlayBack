@@ -381,74 +381,61 @@ AppController::getOrigin(VuMatrix44F& projectionMatrix, VuMatrix44F& modelViewMa
     return false;
 }
 
-
-bool
-AppController::getImageTargetResult(VuMatrix44F& projectionMatrix, VuMatrix44F& modelViewMatrix, VuMatrix44F& scaledModelViewMatrix, VuVector2F& markerSize)
-{
-    bool result = false;
-
-    if (mTarget != IMAGE_TARGET_ID)
-    {
-        return false;
-    }
-
+std::pair<std::unique_ptr<VuObservationList, decltype(&vuObservationListDestroy)>, int>
+AppController::createImageTargetList() {
     VuObservationList* observationList = nullptr;
     REQUIRE_SUCCESS(vuObservationListCreate(&observationList));
 
-    if (vuStateGetImageTargetObservations(mVuforiaState, observationList) != VU_SUCCESS)
-    {
+    if (vuStateGetImageTargetObservations(mVuforiaState, observationList) != VU_SUCCESS) {
         LOG("Error getting image target observations");
         REQUIRE_SUCCESS(vuObservationListDestroy(observationList));
-        return false;
+        std::unique_ptr<VuObservationList, decltype(&vuObservationListDestroy)> _null_ptr_(nullptr, &vuObservationListDestroy);
+        return std::make_pair(std::move(_null_ptr_), 0);
     }
 
     int numObservations = 0;
     REQUIRE_SUCCESS(vuObservationListGetSize(observationList, &numObservations));
 
-    if (numObservations > 0)
-    {
-        VuObservation* observation = nullptr;
-        if (vuObservationListGetElement(observationList, 0, &observation) == VU_SUCCESS)
-        {
-            assert(observation);
-            assert(vuObservationIsType(observation, VU_OBSERVATION_IMAGE_TARGET_TYPE) == VU_TRUE);
-            assert(vuObservationHasPoseInfo(observation) == VU_TRUE);
+    std::unique_ptr<VuObservationList, decltype(&vuObservationListDestroy)> retptr(observationList, &vuObservationListDestroy);
+    return std::make_pair(std::move(retptr), numObservations);
+}
 
-            VuPoseInfo poseInfo;
-            REQUIRE_SUCCESS(vuObservationGetPoseInfo(observation, &poseInfo));
+bool
+AppController::getImageTargetResult(const VuObservation* observation, VuMatrix44F& projectionMatrix, VuMatrix44F& modelViewMatrix, VuMatrix44F& scaledModelViewMatrix, VuVector2F& markerSize, std::string& targetName)
+{
+    if (mTarget != IMAGE_TARGET_ID)
+        return false;
 
-            VuImageTargetObservationTargetInfo imageTargetInfo;
-            REQUIRE_SUCCESS(vuImageTargetObservationGetTargetInfo(observation, &imageTargetInfo));
+    VuPoseInfo poseInfo;
+    REQUIRE_SUCCESS(vuObservationGetPoseInfo(observation, &poseInfo));
 
-            if (poseInfo.poseStatus != VU_OBSERVATION_POSE_STATUS_NO_POSE)
-            {
-                markerSize.data[0] = imageTargetInfo.size.data[0];
-                markerSize.data[1] = imageTargetInfo.size.data[1];
+    VuImageTargetObservationTargetInfo imageTargetInfo;
+    REQUIRE_SUCCESS(vuImageTargetObservationGetTargetInfo(observation, &imageTargetInfo));
 
-                projectionMatrix = mCurrentRenderState.projectionMatrix;
+    if (poseInfo.poseStatus == VU_OBSERVATION_POSE_STATUS_NO_POSE)
+        return false;
 
-                // Compute model-view matrix
-                auto modelMatrix = poseInfo.pose;
-                modelViewMatrix = vuMatrix44FMultiplyMatrix(mCurrentRenderState.viewMatrix, modelMatrix);
+    targetName = imageTargetInfo.name;
+    markerSize.data[0] = imageTargetInfo.size.data[0];
+    markerSize.data[1] = imageTargetInfo.size.data[1];
 
-                // Calculate a scaled modelViewMatrix for rendering a unit bounding box
-                // z-dimension will be zero for planar target
-                // set it here to the larger dimension so that
-                // a 3D augmentation can be shown
-                VuVector3F scale;
-                scale.data[0] = imageTargetInfo.size.data[0];
-                scale.data[1] = imageTargetInfo.size.data[1];
-                scale.data[2] = std::max(scale.data[0], scale.data[1]);
-                scaledModelViewMatrix = vuMatrix44FScale(scale, modelViewMatrix);
+    projectionMatrix = mCurrentRenderState.projectionMatrix;
 
-                result = true;
-            }
-        }
-    }
+    // Compute model-view matrix
+    auto modelMatrix = poseInfo.pose;
+    modelViewMatrix = vuMatrix44FMultiplyMatrix(mCurrentRenderState.viewMatrix, modelMatrix);
 
-    REQUIRE_SUCCESS(vuObservationListDestroy(observationList));
+    // Calculate a scaled modelViewMatrix for rendering a unit bounding box
+    // z-dimension will be zero for planar target
+    // set it here to the larger dimension so that
+    // a 3D augmentation can be shown
+    VuVector3F scale;
+    scale.data[0] = imageTargetInfo.size.data[0];
+    scale.data[1] = imageTargetInfo.size.data[1];
+    scale.data[2] = std::max(scale.data[0], scale.data[1]);
+    scaledModelViewMatrix = vuMatrix44FScale(scale, modelViewMatrix);
 
-    return result;
+    return true;
 }
 
 

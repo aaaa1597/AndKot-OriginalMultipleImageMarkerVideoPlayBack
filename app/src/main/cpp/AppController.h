@@ -99,7 +99,8 @@ public:
 
     /// Get rendering information for the Image Target.
     /// Returns false if Vuforia isn't currently tracking the Image Target.
-    bool getImageTargetResult(VuMatrix44F& projectionMatrix, VuMatrix44F& modelViewMatrix, VuMatrix44F& scaledModelViewMatrix, VuVector2F& markerSize);
+    std::pair<std::unique_ptr<VuObservationList, decltype(&vuObservationListDestroy)>, int> createImageTargetList();
+    bool getImageTargetResult(const VuObservation* observation, VuMatrix44F& projectionMatrix, VuMatrix44F& modelViewMatrix, VuMatrix44F& scaledModelViewMatrix, VuVector2F& markerSize, std::string& targetName);
 
     /// Get the PlatformController handle.
     /// The result is only valid after initAR is called and before deinitAR is called.
