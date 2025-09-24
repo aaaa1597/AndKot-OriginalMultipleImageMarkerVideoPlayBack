@@ -734,7 +734,7 @@ AppController::createObservers()
                 imageTargetConfig.targetName = "001_stones_jpg";
             else
                 imageTargetConfig.targetName = "002_cleyon";
-            imageTargetConfig.activate = VU_TRUE;
+            imageTargetConfig.activate = VU_FALSE;
 
             VuObserver* observer = nullptr;
             VuImageTargetCreationError imageTargetCreationError;
@@ -744,6 +744,13 @@ AppController::createObservers()
                 mErrorMessageCallback("Error creating image target observer");
                 return false;
             }
+
+            /* 同時認識数の設定*/
+            REQUIRE_SUCCESS(vuEngineSetMaximumSimultaneousTrackedImages(mEngine, 5));
+
+            /* Observerをアクティベート */
+            vuObserverActivate(observer);
+
             mObjectObservers.push_back(observer);
         }
     }
