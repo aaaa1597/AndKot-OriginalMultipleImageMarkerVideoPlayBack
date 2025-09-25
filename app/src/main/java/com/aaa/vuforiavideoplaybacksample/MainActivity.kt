@@ -160,6 +160,8 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onDoubleTap(e: MotionEvent): Boolean {
                     super.onDoubleTap(e)
+                    Log.d("aaaaa", "    onDoubleTap() x,y=${e.x}, ${e.y}",)
+                    checkHit(e.x, e.y, _binding.viwGlsurface.width.toFloat(), _binding.viwGlsurface.height.toFloat() )
                     return true
                 }
             })

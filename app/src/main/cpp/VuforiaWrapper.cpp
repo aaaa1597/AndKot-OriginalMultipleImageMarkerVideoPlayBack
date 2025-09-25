@@ -475,3 +475,13 @@ Java_com_aaa_vuforiavideoplaybacksample_VuforiaWrapperKt_nativeSetVideoSize(JNIE
     gWrapperData.renderer._vVideoWidth = static_cast<float>(width);
     gWrapperData.renderer._vVideoHeight= static_cast<float>(height);
 }
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_aaa_vuforiavideoplaybacksample_VuforiaWrapperKt_checkHit(JNIEnv *env, jclass clazz,
+                                                                    jfloat x, jfloat y, jfloat screenW, jfloat screenH) {
+    // スクリーン座標をNDC (-1～1) に変換
+    float ndcX = (2.0f * x / screenW) - 1.0f;
+    float ndcY = 1.0f - (2.0f * y / screenH); // Y反転してOpenGL系に合わせる
+
+//    checkPolygonHit(ndcX, ndcY);
+}
